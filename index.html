@@ -20,12 +20,18 @@
                             var map = new google.maps.Map(document.getElementById("map-canvas"),
                                     mapOptions);
                         }
+                        
+
                         google.maps.event.addDomListener(window, 'load', initialize);
+                        
+                        var marker=new google.maps.Marker({
+						  position:myCenter,
+						  });
+						
+						marker.setMap(map);
                     </script>
                 </head>
                 <body>
                 <div id="map-canvas"/>
-                <h1>test3</h1>
-                <h2>test2</h2>
                 </body>
                 </html>
