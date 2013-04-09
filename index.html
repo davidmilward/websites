@@ -18,10 +18,11 @@
 		</style>
 		<script type="text/javascript"
 		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCLvkujoMyyUQx0nte4_JnxGriyGeHaAKI&sensor=true"></script>
+		<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places"></script>
 		<script type="text/javascript">
-			
 			var map;
-			
+			var marker;
+
 			function initialize() {
 
 				var myCenter = new google.maps.LatLng(54.776831004820515, -1.5815162658691406);
@@ -33,26 +34,69 @@
 				};
 				map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
 
+				var input = document.getElementById('searchTextField');
+				var autocomplete = new google.maps.places.Autocomplete(input);
+
+				autocomplete.bindTo('bounds', map);
+
+				var infowindow = new google.maps.InfoWindow();
 				var marker = new google.maps.Marker({
-					position : myCenter,
-				});
-
-				marker.setMap(map);
-
-				var infowindow = new google.maps.InfoWindow({
-					content : "Hello World!"
-				});
-
-				infowindow.open(map, marker);
-
-				google.maps.event.addListener(marker, 'click', function() {
-					map.setZoom(15);
-					map.setCenter(marker.getPosition());
+					map : map
 				});
 
 				google.maps.event.addListener(map, 'click', function(event) {
 					placeMarker(event.latLng);
 				});
+
+				google.maps.event.addListener(autocomplete, 'place_changed', function() {
+					infowindow.close();
+					marker.setVisible(false);
+					input.className = '';
+					var place = autocomplete.getPlace();
+					if (!place.geometry) {
+						// Inform the user that the place was not found and return.
+						input.className = 'notfound';
+						return;
+					}
+
+					// If the place has a geometry, then present it on a map.
+					if (place.geometry.viewport) {
+						map.fitBounds(place.geometry.viewport);
+					} else {
+						map.setCenter(place.geometry.location);
+						map.setZoom(17);
+						// Why 17? Because it looks good.
+					}
+					var image = {
+						url : place.icon,
+						size : new google.maps.Size(71, 71),
+						origin : new google.maps.Point(0, 0),
+						anchor : new google.maps.Point(17, 34),
+						scaledSize : new google.maps.Size(35, 35)
+					};
+					marker.setIcon(image);
+					marker.setPosition(place.geometry.location);
+					marker.setVisible(true);
+
+					var address = '';
+					if (place.address_components) {
+						address = [(place.address_components[0] && place.address_components[0].short_name || ''), (place.address_components[1] && place.address_components[1].short_name || ''), (place.address_components[2] && place.address_components[2].short_name || '')].join(' ');
+					}
+
+					infowindow.setContent('<div><strong>' + place.name + '</strong><br>' + address);
+					infowindow.open(map, marker);
+				});
+
+				function setupClickListener(id, types) {
+					var radioButton = document.getElementById(id);
+					google.maps.event.addDomListener(radioButton, 'click', function() {
+						autocomplete.setTypes(types);
+					});
+				}
+
+				setupClickListener('changetype-all', []);
+				setupClickListener('changetype-establishment', ['establishment']);
+				setupClickListener('changetype-geocode', ['geocode']);
 
 			}
 
@@ -60,7 +104,7 @@
 				var marker = new google.maps.Marker({
 					position : location,
 					map : map,
-					draggable: true,
+					draggable : true,
 				});
 				var infowindow = new google.maps.InfoWindow({
 					content : 'Latitude: ' + location.lat() + '<br>Longitude: ' + location.lng()
@@ -74,6 +118,19 @@
 		</script>
 	</head>
 	<body>
+		<br/>
+		<div>
+			<input id="searchTextField" type="text" size="50">
+			<input type="radio" name="type" id="changetype-all" checked="checked">
+			<label for="changetype-all">All</label>
+
+			<input type="radio" name="type" id="changetype-establishment">
+			<label for="changetype-establishment">Establishments</label>
+
+			<input type="radio" name="type" id="changetype-geocode">
+			<label for="changetype-geocode">Geocodes</lable>
+		</div>
+		<br/>
 		<div id="map-canvas"/>
 	</body>
 </html>
